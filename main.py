@@ -102,7 +102,7 @@ def fetch_and_save_news(db: Session = Depends(get_db)):
                 added_count += 1
 
     db.commit()
-    return {"status": "success", "message": f"複数サイトから {added_count} 件の新しい記事を保存し、タグ付けしました。"}}
+    return {"status": "success", "message": f"複数サイトから {added_count} 件の新しい記事を保存し、タグ付けしました。"}
 
 @app.get("/api/news")
 def get_saved_news(db: Session = Depends(get_db)):
