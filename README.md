@@ -6,7 +6,7 @@
 <br>
 
 ## デモサイト
-- https://security-news-dashboard-dr0thfqj1-tomoki1639s-projects.vercel.app/
+- https://security-news-dashboard.vercel.app/
 
 <br>
 
