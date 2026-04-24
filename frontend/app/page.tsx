@@ -59,8 +59,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* ▼▼▼ 追加：検索・絞り込みエリア ▼▼▼ */}
-      <div className="bg-white p-5 rounded-lg shadow-sm border mb-8 space-y-4">
+      {/* 検索・絞り込みエリア */}
+      <div className="w-full bg-white p-5 rounded-lg shadow-sm border mb-8 space-y-4">
         {/* 検索ボックス */}
         <div>
           <input 
@@ -89,10 +89,9 @@ export default function Home() {
           ))}
         </div>
       </div>
-      {/* ▲▲▲ ここまで追加 ▲▲▲ */}
 
       {/* 記事一覧の表示 */}
-      <div className="space-y-4">
+      <div className="w-full space-y-4">
         {isLoading ? (
           <p className="text-gray-500 text-center py-10 animate-pulse">データを読み込み中...</p>
         ) : filteredArticles.length > 0 ? (
@@ -114,7 +113,7 @@ export default function Home() {
             </div>
           ))
         ) : (
-          <p className="text-gray-500 text-center py-10 bg-white border rounded-lg">条件に一致する記事がありません。</p>
+          <p className="w-full text-gray-500 text-center py-10 bg-white border rounded-lg">条件に一致する記事がありません。</p>
         )}
       </div>
     </main>
