@@ -7,7 +7,6 @@
 
 ## デモサイト
 - https://security-news-dashboard-dr0thfqj1-tomoki1639s-projects.vercel.app/
-- https://security-news-dashboard-git-main-tomoki1639s-projects.vercel.app/
 
 <br>
 
