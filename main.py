@@ -58,6 +58,15 @@ def extract_tags(text: str) -> str:
         
     return ",".join(found_tags)
 
+# CORS設定：ブラウザからの直接アクセスを許可する
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # すべてのドメインからのアクセスを許可
+    allow_credentials=True,
+    allow_methods=["*"],  # GETやPOSTなどのすべてのメソッドを許可
+    allow_headers=["*"],  # すべてのヘッダーを許可
+)
+
 # --- APIエンドポイント ---
 @app.get("/api/fetch")
 def fetch_and_save_news(db: Session = Depends(get_db)):
