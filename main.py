@@ -35,7 +35,7 @@ def extract_tags(text: str) -> str:
     """
     テキストからキーワードを探し、タグを生成する
     """
-    # キーワードと付与するタグの辞書（自由にカスタマイズ可能です）
+    # キーワードと付与するタグの辞書
     keywords = {
         "脆弱性": "脆弱性",
         "アップデート": "アップデート",
@@ -61,31 +61,48 @@ def extract_tags(text: str) -> str:
 # --- APIエンドポイント ---
 @app.get("/api/fetch")
 def fetch_and_save_news(db: Session = Depends(get_db)):
-    target_rss_url = "https://www.jpcert.or.jp/rss/jpcert.rdf"
-    feed = feedparser.parse(target_rss_url)
-
-    if feed.bozo:
-        return {"status": "error", "message": "RSSの取得に失敗しました。"}
+    """
+    複数のRSSを取得し、新しい記事だけをデータベースに保存するAPI
+    """
+    
+    target_rss_urls = [
+        "https://www.jpcert.or.jp/rss/jpcert.rdf",             # JPCERT/CC
+        "https://www.security-next.com/feed",                  # Security NEXT (国内セキュリティニュース)
+        "https://thehackernews.com/feeds/posts/default?alt=rss", # The Hacker News (海外の最新動向)
+        "https://latesthackingnews.com/feed/",                 # Latest Hacking News
+        "https://www.zdnet.com/topic/security/rss.xml"        # ZDNet Security (海外のセキュリティニュース)
+    ]
 
     added_count = 0
-    for entry in feed.entries[:10]:
-        existing_article = db.query(Article).filter(Article.url == entry.link).first()
-        
-        if not existing_article:
-            # タイトルからタグを自動生成
-            generated_tags = extract_tags(entry.title)
+    
+    # 登録したURLを順番に処理していくループ
+    for url in target_rss_urls:
+        feed = feedparser.parse(url)
+
+        # 取得に失敗したサイトがあっても、エラーで止めずに次のサイトへ進む (continue)
+        if feed.bozo:
+            print(f"取得スキップ: {url}")
+            continue
+
+        # 各サイトの最新5件ずつを確認する
+        for entry in feed.entries[:5]:
+            existing_article = db.query(Article).filter(Article.url == entry.link).first()
             
-            new_article = Article(
-                title=entry.title,
-                url=entry.link,
-                published=getattr(entry, 'published', '公開日不明'),
-                tags=generated_tags # 自動生成したタグを保存
-            )
-            db.add(new_article)
-            added_count += 1
+            if not existing_article:
+                # タイトルからタグを自動生成
+                generated_tags = extract_tags(entry.title)
+                
+                new_article = Article(
+                    title=entry.title,
+                    url=entry.link,
+                    published=getattr(entry, 'published', '公開日不明'),
+                    tags=generated_tags 
+                )
+                db.add(new_article)
+                added_count += 1
 
     db.commit()
-    return {"status": "success", "message": f"{added_count}件の新しい記事を保存し、タグ付けしました。"}
+    return {"status": "success", "message": f"複数サイトから {added_count} 件の新しい記事を保存し、タグ付けしました。"}}
 
 @app.get("/api/news")
 def get_saved_news(db: Session = Depends(get_db)):
