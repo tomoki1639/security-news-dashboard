@@ -7,7 +7,7 @@ export default function Home() {
   const [articles, setArticles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
-  
+
   // 検索と絞り込み用の状態
   const [searchQuery, setSearchQuery] = useState(""); // 検索ボックスの文字
   const [selectedTag, setSelectedTag] = useState("すべて"); // 選択されているタグ
@@ -19,9 +19,9 @@ export default function Home() {
         const timestamp = new Date().getTime();
         // ★URLはRenderのものに設定済みです
         const res = await fetch(`https://security-news-dashboard.onrender.com/api/news?t=${timestamp}`);
-        
+
         if (!res.ok) throw new Error(`エラー: ${res.status}`);
-        
+
         const data = await res.json();
         setArticles(data.data || []);
       } catch (error) {
@@ -43,79 +43,80 @@ export default function Home() {
     const matchTag = selectedTag === "すべて" || article.tags.includes(selectedTag);
     // 検索文字の条件（タイトルに検索文字が含まれているかチェック。大文字小文字は区別しない）
     const matchQuery = article.title.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     return matchTag && matchQuery;
   });
 
   // --- 画面の描画 ---
   return (
-    <main className="p-8 max-w-4xl mx-auto bg-slate-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8 text-slate-800">セキュリティ・技術ニュース</h1>
-      
-      {/* エラーメッセージ */}
-      {errorMsg && (
-        <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg mb-6">
-          <p>{errorMsg}</p>
-        </div>
-      )}
+    <div className="bg-slate-50 min-h-screen w-full">
 
-      {/* 検索・絞り込みエリア */}
-      <div className="w-full bg-white p-5 rounded-lg shadow-sm border mb-8 space-y-4">
-        {/* 検索ボックス */}
-        <div>
-          <input 
-            type="text" 
-            placeholder="記事のタイトルを検索..." 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)} // 入力されるたびにstateを更新
-          />
-        </div>
-        
-        {/* タグのボタン一覧 */}
-        <div className="flex flex-wrap gap-2">
-          {allTags.map(tag => (
-            <button
-              key={tag}
-              onClick={() => setSelectedTag(tag)} // クリックされたらstateを更新
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedTag === tag 
-                  ? "bg-blue-600 text-white shadow-md" // 選択中のデザイン
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200" // 未選択のデザイン
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-      </div>
+      <main className="p-8 max-w-4xl mx-auto w-full flex flex-col items-stretch">
 
-      {/* 記事一覧の表示 */}
-      <div className="w-full space-y-4">
-        {isLoading ? (
-          <p className="text-gray-500 text-center py-10 animate-pulse">データを読み込み中...</p>
-        ) : filteredArticles.length > 0 ? (
-          filteredArticles.map((article: any) => (
-            <div key={article.id} className="bg-white border p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-              <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xl text-blue-600 hover:text-blue-800 hover:underline font-medium block mb-2">
-                {article.title}
-              </a>
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex gap-2 flex-wrap">
-                  {article.tags.split(',').map((tag: string, index: number) => (
-                    <span key={index} className="bg-blue-50 text-blue-700 px-3 py-1 text-xs rounded-full border border-blue-200">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="text-gray-500 text-sm">{article.published}</div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="w-full text-gray-500 text-center py-10 bg-white border rounded-lg">条件に一致する記事がありません。</p>
+        <h1 className="text-3xl font-bold mb-8 text-slate-800">Security and Technology News</h1>
+
+        {/* エラーメッセージ */}
+        {errorMsg && (
+          <div className="w-full bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg mb-6">
+            <p>{errorMsg}</p>
+          </div>
         )}
-      </div>
-    </main>
+
+        {/* 検索・絞り込みエリア */}
+        <div className="w-full bg-white p-5 rounded-lg shadow-sm border mb-8 space-y-4">
+          <div>
+            <input
+              type="text"
+              placeholder="記事のタイトルを検索..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(tag)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedTag === tag
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 記事一覧の表示 */}
+        <div className="w-full space-y-4">
+          {isLoading ? (
+            <p className="w-full text-gray-500 text-center py-10 animate-pulse bg-white border rounded-lg">データを読み込み中...</p>
+          ) : filteredArticles.length > 0 ? (
+            filteredArticles.map((article: any) => (
+              <div key={article.id} className="w-full bg-white border p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xl text-blue-600 hover:text-blue-800 hover:underline font-medium block mb-2">
+                  {article.title}
+                </a>
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex gap-2 flex-wrap">
+                    {article.tags.split(',').map((tag: string, index: number) => (
+                      <span key={index} className="bg-blue-50 text-blue-700 px-3 py-1 text-xs rounded-full border border-blue-200">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="text-gray-500 text-sm">{article.published}</div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="w-full text-gray-500 text-center py-10 bg-white border rounded-lg">条件に一致する記事がありません。</p>
+          )}
+        </div>
+      </main>
+    </div>
   );
 }
