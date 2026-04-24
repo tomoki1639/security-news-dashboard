@@ -38,6 +38,7 @@
 <br>
 
 ## システム構成図
+<img width="998" height="526" alt="image" src="https://github.com/user-attachments/assets/7b46f8a0-4d48-48a7-be6a-f27215f40d77" />
 
 
 
