@@ -1,0 +1,15 @@
+name: Auto News Fetch
+
+on:
+  schedule:
+    # 3時間おきに実行 (UTC時間なので、日本時間の 0, 3, 6, 9... 時に相当)
+    - cron: '0 */3 * * *'
+  workflow_dispatch: # 手動でテスト実行するためのボタンも作ります
+
+jobs:
+  fetch_news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call API Fetch URL
+        run: |
+          curl -X GET "https://security-news-dashboard.onrender.com/api/fetch"
