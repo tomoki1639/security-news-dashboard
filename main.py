@@ -86,14 +86,14 @@ def fetch_and_save_news(db: Session = Depends(get_db)):
     """
 
     target_rss_urls = [
-        "https://www.jpcert.or.jp/rss/jpcert.rdf",             # JPCERT/CC
+        # JPCERT/CC
+        "https://www.jpcert.or.jp/rss/jpcert.rdf",
         # Security NEXT (国内セキュリティニュース)
         "https://www.security-next.com/feed",
         # The Hacker News (海外の最新動向)
         "https://thehackernews.com/feeds/posts/default?alt=rss",
-        "https://latesthackingnews.com/feed/",                 # Latest Hacking News
-        # ZDNet Security (海外のセキュリティニュース)
-        "https://www.zdnet.com/topic/security/rss.xml"
+        # Latest Hacking News
+        "https://latesthackingnews.com/feed/",
     ]
 
     added_count = 0
