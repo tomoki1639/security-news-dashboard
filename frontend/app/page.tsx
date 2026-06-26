@@ -2,11 +2,22 @@
 
 import { useState, useEffect } from 'react';
 
+type Article = {
+  id: number;
+  title: string;
+  url: string;
+  published: string;
+  tags: string;
+};
+
+const ARTICLES_PER_PAGE = 10;
+
 export default function Home() {
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedTag, setSelectedTag] = useState("すべて");
 
   useEffect(() => {
@@ -17,7 +28,7 @@ export default function Home() {
         if (!res.ok) throw new Error(`エラー: ${res.status}`);
         const data = await res.json();
         setArticles(data.data || []);
-      } catch (error) {
+      } catch {
         setErrorMsg("現在ニュースデータを取得できません。バックエンドがスリープ中の可能性があります。");
       } finally {
         setIsLoading(false);
@@ -33,6 +44,13 @@ export default function Home() {
     const matchQuery = article.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchTag && matchQuery;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredArticles.length / ARTICLES_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedArticles = filteredArticles.slice(
+    (safeCurrentPage - 1) * ARTICLES_PER_PAGE,
+    safeCurrentPage * ARTICLES_PER_PAGE
+  );
 
   return (
     <div style={{
@@ -293,6 +311,55 @@ export default function Home() {
           text-transform: uppercase;
           margin-bottom: 0.75rem;
         }
+
+        .results-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 0.75rem;
+        }
+
+        .results-header .results-count {
+          margin-bottom: 0;
+        }
+
+        .pagination {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .page-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 4px;
+          border: 1px solid rgba(255,255,255,0.12);
+          background: transparent;
+          color: rgba(255,255,255,0.55);
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 0.75rem;
+          transition: all 0.15s ease;
+        }
+
+        .page-btn:hover {
+          border-color: rgba(0,255,170,0.4);
+          color: rgba(255,255,255,0.85);
+        }
+
+        .page-btn.active {
+          background: rgba(0, 255, 170, 0.12);
+          border-color: rgba(0,255,170,0.5);
+          color: #00ffaa;
+        }
+
+        @media (max-width: 640px) {
+          .results-header {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+        }
       `}</style>
 
       <main className="main-content">
@@ -329,13 +396,19 @@ export default function Home() {
             placeholder="記事のタイトルを検索..."
             className="search-input"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
           />
           <div className="tags-wrap">
             {allTags.map(tag => (
               <button
                 key={tag}
-                onClick={() => setSelectedTag(tag)}
+                onClick={() => {
+                  setSelectedTag(tag);
+                  setCurrentPage(1);
+                }}
                 className={`tag-btn ${selectedTag === tag ? 'active' : ''}`}
               >
                 {tag}
@@ -346,14 +419,31 @@ export default function Home() {
 
         {/* Results */}
         {!isLoading && !errorMsg && (
-          <div className="results-count">{filteredArticles.length} results</div>
+          <div className="results-header">
+            <div className="results-count">
+              {filteredArticles.length} results / page {safeCurrentPage} of {totalPages}
+            </div>
+            <div className="pagination" aria-label="News pages">
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`page-btn ${safeCurrentPage === page ? 'active' : ''}`}
+                  aria-current={safeCurrentPage === page ? "page" : undefined}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         <div className="article-list">
           {isLoading ? (
             <div className="loading-state">Fetching intelligence data...</div>
           ) : filteredArticles.length > 0 ? (
-            filteredArticles.map((article: any) => (
+            paginatedArticles.map((article) => (
               <div key={article.id} className="article-card">
                 <a
                   href={article.url}
