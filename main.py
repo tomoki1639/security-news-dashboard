@@ -178,6 +178,9 @@ def fetch_and_save_news(db: Session = Depends(get_db)):
 
 @app.get("/api/news")
 def get_saved_news(db: Session = Depends(get_db)):
+    if db.query(Article).count() == 0:
+        fetch_and_save_news(db)
+
     prune_old_articles(db)
     articles = (
         db.query(Article)
