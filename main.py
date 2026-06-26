@@ -1,14 +1,17 @@
 import os
+import logging
 
 import feedparser
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./news.db")
 MAX_STORED_ARTICLES = 30
+logger = logging.getLogger(__name__)
 
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(
@@ -24,6 +27,7 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+database_initialized = False
 
 
 class Article(Base):
@@ -35,13 +39,37 @@ class Article(Base):
     published = Column(String)
     tags = Column(String)
 
-
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="Security News API")
 
 
+def initialize_database() -> bool:
+    global database_initialized
+
+    if database_initialized:
+        return True
+
+    try:
+        Base.metadata.create_all(bind=engine)
+    except SQLAlchemyError:
+        logger.exception("Database initialization failed")
+        return False
+
+    database_initialized = True
+    return True
+
+
+@app.on_event("startup")
+def startup_event():
+    initialize_database()
+
+
 def get_db():
+    if not initialize_database():
+        raise HTTPException(
+            status_code=503,
+            detail="Database is not reachable. Check DATABASE_URL and the Render database hostname.",
+        )
+
     db = SessionLocal()
     try:
         yield db
@@ -98,6 +126,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+def health_check():
+    return {"status": "ok"}
 
 
 @app.get("/api/fetch")
