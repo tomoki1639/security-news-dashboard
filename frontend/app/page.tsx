@@ -11,6 +11,7 @@ type Article = {
 };
 
 const ARTICLES_PER_PAGE = 10;
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 export default function Home() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -24,10 +25,13 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const timestamp = new Date().getTime();
-        const res = await fetch(`https://security-news-dashboard.onrender.com/api/news?t=${timestamp}`);
+        const res = await fetch(`https://security-news-dashboard.onrender.com/api/news?t=${timestamp}`, {
+          cache: "no-store",
+        });
         if (!res.ok) throw new Error(`エラー: ${res.status}`);
         const data = await res.json();
         setArticles(data.data || []);
+        setErrorMsg("");
       } catch {
         setErrorMsg("現在ニュースデータを取得できません。バックエンドがスリープ中の可能性があります。");
       } finally {
@@ -35,6 +39,9 @@ export default function Home() {
       }
     };
     fetchData();
+    const intervalId = window.setInterval(fetchData, REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   const allTags = ["すべて", ...Array.from(new Set(articles.flatMap(article => article.tags.split(','))))].filter(tag => tag !== "");

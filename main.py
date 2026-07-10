@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime, timedelta, timezone
 
 import feedparser
 from fastapi import Depends, FastAPI, HTTPException
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./news.db")
 MAX_STORED_ARTICLES = 30
+FETCH_INTERVAL_MINUTES = int(os.getenv("FETCH_INTERVAL_MINUTES", "15"))
 logger = logging.getLogger(__name__)
 
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
@@ -28,6 +30,7 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 database_initialized = False
+last_fetch_at: datetime | None = None
 
 
 class Article(Base):
@@ -135,6 +138,8 @@ def health_check():
 
 @app.get("/api/fetch")
 def fetch_and_save_news(db: Session = Depends(get_db)):
+    global last_fetch_at
+
     target_rss_urls = [
         "https://www.jpcert.or.jp/rss/jpcert.rdf",
         "https://www.security-next.com/feed",
@@ -167,6 +172,7 @@ def fetch_and_save_news(db: Session = Depends(get_db)):
                 added_count += 1
 
     db.commit()
+    last_fetch_at = datetime.now(timezone.utc)
     deleted_count = prune_old_articles(db)
     return {
         "status": "success",
@@ -178,7 +184,13 @@ def fetch_and_save_news(db: Session = Depends(get_db)):
 
 @app.get("/api/news")
 def get_saved_news(db: Session = Depends(get_db)):
-    if db.query(Article).count() == 0:
+    should_fetch = (
+        last_fetch_at is None
+        or datetime.now(timezone.utc) - last_fetch_at
+        >= timedelta(minutes=FETCH_INTERVAL_MINUTES)
+    )
+
+    if db.query(Article).count() == 0 or should_fetch:
         fetch_and_save_news(db)
 
     prune_old_articles(db)
