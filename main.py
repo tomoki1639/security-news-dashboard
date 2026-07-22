@@ -1,6 +1,7 @@
 import os
 import logging
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 
 import feedparser
 from fastapi import Depends, FastAPI, HTTPException
@@ -103,6 +104,21 @@ def extract_tags(text: str) -> str:
     return ",".join(found_tags)
 
 
+def parse_published_datetime(published: str | None) -> datetime:
+    if not published:
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    try:
+        parsed = parsedate_to_datetime(published)
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+
+    return parsed.astimezone(timezone.utc)
+
+
 def prune_old_articles(db: Session) -> int:
     old_article_ids = [
         article_id
@@ -199,6 +215,11 @@ def get_saved_news(db: Session = Depends(get_db)):
         .order_by(Article.id.desc())
         .limit(MAX_STORED_ARTICLES)
         .all()
+    )
+    articles = sorted(
+        articles,
+        key=lambda article: (parse_published_datetime(article.published), article.id),
+        reverse=True,
     )
     return {
         "status": "success",
