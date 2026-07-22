@@ -110,7 +110,11 @@ def parse_published_datetime(published: str | None) -> datetime:
 
     try:
         parsed = parsedate_to_datetime(published)
-    except (TypeError, ValueError, IndexError, OverflowError):
+    except Exception:
+        logger.warning("Could not parse published date: %s", published)
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    if parsed is None:
         return datetime.min.replace(tzinfo=timezone.utc)
 
     if parsed.tzinfo is None:
